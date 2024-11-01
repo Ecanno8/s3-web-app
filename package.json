@@ -1,7 +1,7 @@
 {
   "name": "s3-web-app",
   "version": "1.0.0",
-  "main": "s3client.js",
+  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
