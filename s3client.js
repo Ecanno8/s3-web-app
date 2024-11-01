@@ -31,20 +31,21 @@ app.get('/styles.css', (req, res) => {
 
 // Endpoint to list objects in the S3 'Images/' folder
 app.get('/images', async (req, res) => {
-    const listObjectsParams = {
-        Bucket: process.env.BUCKET_NAME,
-        Prefix: 'images/' // Specify folder prefix
+    const params = {
+        Bucket: 'cccf-s3-web-app',
+        Prefix: 'images/' // Ensure this matches your folder name
     };
 
     try {
-        const listObjectsCmd = new ListObjectsV2Command(listObjectsParams);
-        const listObjectsResponse = await s3Client.send(listObjectsCmd);
-        res.json(listObjectsResponse);
-    } catch (err) {
-        console.error("Error listing objects:", err);
-        res.status(500).send("Error listing objects");
+        const data = await s3.listObjectsV2(params).promise();
+        console.log("S3 data:", JSON.stringify(data, null, 2)); // Log the data in a readable format
+        res.json(data);
+    } catch (error) {
+        console.error("Error listing objects from S3:", error);
+        res.status(500).send("Error fetching images from S3.");
     }
 });
+
 
 // Endpoint to upload a file to the S3 'Images/' folder
 app.post('/images', async (req, res) => {
