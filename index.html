@@ -39,7 +39,21 @@
         async function loadImages() {
             try {
                 const response = await fetch('/images');
-                const images = await response.json();
+                if (!response.ok) {
+                    // If response status is not OK, throw an error
+                    throw new Error(`Error fetching images: ${response.statusText}`);
+                }
+
+                // Attempt to parse JSON, handling cases where parsing might fail
+                let images;
+                try {
+                    images = await response.json();
+                } catch (parseError) {
+                    console.error("Failed to parse JSON:", parseError);
+                    document.getElementById('image-list').innerHTML = '<p>Error loading images.</p>';
+                    return;
+                }
+
                 console.log("Fetched images:", images); // Log images to see structure
                 const imageList = document.getElementById('image-list');
                 imageList.innerHTML = '';

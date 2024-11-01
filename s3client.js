@@ -46,9 +46,10 @@ app.get('/images', async (req, res) => {
         }
     } catch (error) {
         console.error("Error listing objects from S3:", error);
-        res.status(500).send("Error fetching images from S3.");
+        res.status(500).json({ error: "Error fetching images from S3." });
     }
 });
+
 
 // Endpoint to upload a file to the S3 'images/' folder
 app.post('/images', async (req, res) => {
