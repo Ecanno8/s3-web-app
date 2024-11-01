@@ -33,7 +33,7 @@ app.get('/styles.css', (req, res) => {
 app.get('/images', async (req, res) => {
     const params = {
         Bucket: 'cccf-s3-web-app-bucket',
-        Prefix: 'images/', // The correct folder path in your bucket
+        Prefix: 'images/', // Ensure this matches your S3 folder structure
     };
 
     try {
@@ -68,7 +68,7 @@ app.post('/images', async (req, res) => {
             const fileStream = fs.createReadStream(tempPath);
             const uploadParams = {
                 Bucket: 'cccf-s3-web-app-bucket',
-                Key: `images/${file.name}`, // Save in the 'images/' folder
+                Key: `images/${file.name}`, // Ensure the path matches your S3 folder
                 Body: fileStream,
             };
             await s3Client.send(new PutObjectCommand(uploadParams));

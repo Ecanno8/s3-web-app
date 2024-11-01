@@ -22,32 +22,43 @@
         document.getElementById('upload-form').onsubmit = async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target);
-            const response = await fetch('/images', {
-                method: 'POST',
-                body: formData,
-            });
-            const result = await response.text();
-            alert(result);
-            loadImages();
+            try {
+                const response = await fetch('/images', {
+                    method: 'POST',
+                    body: formData,
+                });
+                const result = await response.text();
+                alert(result);
+                loadImages(); // Reload images after upload
+            } catch (error) {
+                console.error("Upload error:", error);
+                alert("Error uploading image.");
+            }
         };
 
         async function loadImages() {
-            const response = await fetch('/images');
-            const images = await response.json();
-            const imageList = document.getElementById('image-list');
-            imageList.innerHTML = '';
+            try {
+                const response = await fetch('/images');
+                const images = await response.json();
+                console.log("Fetched images:", images); // Log images to see structure
+                const imageList = document.getElementById('image-list');
+                imageList.innerHTML = '';
 
-            if (images.length > 0) {
-                images.forEach((imageKey) => {
-                    const imageUrl = `https://cccf-s3-web-app-bucket.s3.amazonaws.com/${imageKey}`;
-                    const imgElement = document.createElement('img');
-                    imgElement.src = imageUrl;
-                    imgElement.alt = imageKey;
-                    imgElement.style.width = '100px'; // Adjust size as needed
-                    imageList.appendChild(imgElement);
-                });
-            } else {
-                imageList.innerHTML = '<p>No images found.</p>';
+                if (Array.isArray(images) && images.length > 0) {
+                    images.forEach((imageKey) => {
+                        const imageUrl = `https://cccf-s3-web-app-bucket.s3.amazonaws.com/${imageKey}`;
+                        const imgElement = document.createElement('img');
+                        imgElement.src = imageUrl;
+                        imgElement.alt = imageKey;
+                        imgElement.style.width = '100px'; // Adjust size as needed
+                        imageList.appendChild(imgElement);
+                    });
+                } else {
+                    imageList.innerHTML = '<p>No images found.</p>';
+                }
+            } catch (error) {
+                console.error("Error loading images:", error);
+                document.getElementById('image-list').innerHTML = '<p>Error loading images.</p>';
             }
         }
 
