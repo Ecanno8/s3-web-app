@@ -33,7 +33,7 @@ app.get('/styles.css', (req, res) => {
 app.get('/images', async (req, res) => {
     const listObjectsParams = {
         Bucket: process.env.BUCKET_NAME,
-        Prefix: 'Images/' // Specify folder prefix
+        Prefix: 'images/' // Specify folder prefix
     };
 
     try {
@@ -64,12 +64,12 @@ app.post('/images', async (req, res) => {
             const fileStream = fs.createReadStream(tempPath);
             const uploadParams = {
                 Bucket: process.env.BUCKET_NAME,
-                Key: `Images/${file.name}`, // Save in 'Images/' folder
+                Key: `images/${file.name}`, // Save in 'Images/' folder
                 Body: fileStream,
             };
             const putObjectCmd = new PutObjectCommand(uploadParams);
             await s3Client.send(putObjectCmd);
-            res.send(`File uploaded successfully to ${process.env.BUCKET_NAME}/Images/${file.name}`);
+            res.send(`File uploaded successfully to ${process.env.BUCKET_NAME}/images/${file.name}`);
         } catch (err) {
             console.error("Error uploading file:", err);
             res.status(500).send("Error uploading file");
