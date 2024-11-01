@@ -16,7 +16,7 @@ const s3Client = new S3Client({
     forcePathStyle: true,
 });
 
-// sendFile will go here
+// Serve the HTML file
 app.get('/', function (req, res) {
     res.sendFile(path.join(__dirname, '/index.html'));
 });
@@ -39,9 +39,13 @@ app.get('/images', async (req, res) => {
 
 // Upload an object to S3 bucket
 app.post('/images', async (req, res) => {
+    if (!req.files || !req.files.image) {
+        return res.status(400).send("No file uploaded.");
+    }
+
     const file = req.files.image;
     const fileName = file.name;
-    const tempPath = path.join(process.env.UPLOAD_TEMP_PATH, fileName);
+    const tempPath = path.join(__dirname, 'uploads', fileName);
 
     // Move the file to a temporary path
     file.mv(tempPath, async (err) => {
@@ -65,8 +69,7 @@ app.post('/images', async (req, res) => {
             console.error(err);
             res.status(500).send("Error uploading file");
         } finally {
-            // Optionally, delete the temp file after uploading
-            fs.unlinkSync(tempPath);
+            fs.unlinkSync(tempPath); // Optionally, delete the temp file after uploading
         }
     });
 });
