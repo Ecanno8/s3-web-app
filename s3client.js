@@ -3,6 +3,7 @@
 const AWS = require('aws-sdk');
 const express = require('express');
 const bodyParser = require('body-parser');
+const multer = require('multer');
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -18,6 +19,12 @@ const s3 = new AWS.S3();
 // Middleware
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static('public')); // Serve static files from the 'public' directory
+
+// Set up multer for file uploads
+const upload = multer({
+    storage: multer.memoryStorage(), // Store files in memory for upload
+});
 
 // Endpoint to list all objects in the bucket
 app.get('/list-objects', async (req, res) => {
@@ -27,23 +34,23 @@ app.get('/list-objects', async (req, res) => {
 
     try {
         const data = await s3.listObjectsV2(params).promise();
-        const objectKeys = data.Contents.map(item => item.Key);
-        res.json(objectKeys); // Send back the list of object keys
+        res.json(data.Contents); // Send back the list of objects
     } catch (err) {
         console.error(err);
         res.status(500).send('Error retrieving objects');
     }
 });
 
-// Endpoint to upload an object to the bucket
-app.post('/upload', (req, res) => {
-    const { fileName, fileContent } = req.body; // Assume you're sending fileName and fileContent in the body
+// Endpoint to upload an image to the bucket
+app.post('/images', upload.single('image'), (req, res) => {
+    const fileContent = req.file.buffer; // Get file content from multer
+    const fileName = req.file.originalname; // Get the original file name
 
     const params = {
         Bucket: 'cccf-s3-web-app-bucket',
-        Key: fileName,
+        Key: `images/${fileName}`, // Store images in an 'images' folder
         Body: fileContent,
-        ContentType: 'text/plain' // Change as necessary (e.g., 'image/jpeg' for images)
+        ContentType: req.file.mimetype, // Set content type from uploaded file
     };
 
     s3.upload(params, (err, data) => {
@@ -69,24 +76,6 @@ app.get('/retrieve/:key', (req, res) => {
         }
         res.send(data.Body); // Send the file content back (use appropriate content type)
     });
-});
-
-// Endpoint to list and display image URLs
-app.get('/images', async (req, res) => {
-    const params = {
-        Bucket: 'cccf-s3-web-app-bucket'
-    };
-
-    try {
-        const data = await s3.listObjectsV2(params).promise();
-        const imageUrls = data.Contents.map(item => {
-            return `https://${params.Bucket}.s3.amazonaws.com/${item.Key}`;
-        });
-        res.json(imageUrls); // Send image URLs to the frontend
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Error retrieving images');
-    }
 });
 
 // Start the server

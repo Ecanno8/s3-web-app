@@ -4,57 +4,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="styles.css">
     <title>S3 Web App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        input,
+        button {
+            margin: 5px;
+            padding: 10px;
+        }
+    </style>
 </head>
 
 <body>
-    <h1>Welcome to the S3 Web App</h1>
-    <div id="file-list"></div>
+    <h1>S3 Web Application</h1>
 
-    <!-- File input and upload button -->
-    <input type="file" id="file-input" accept="image/*" />
+    <h2>List Objects in Bucket</h2>
+    <button id="list-btn">List Objects</button>
+    <pre id="list-output"></pre>
+
+    <h2>Upload Image</h2>
+    <input type="file" id="imageFile">
     <button id="upload-btn">Upload</button>
+    <div id="upload-output"></div>
 
-    <div id="message" style="margin-top: 20px;"></div> <!-- Message display -->
+    <h2>Retrieve Object</h2>
+    <input type="text" id="retrieveKey" placeholder="Object Key">
+    <button id="retrieve-btn">Retrieve</button>
+    <pre id="retrieve-output"></pre>
 
     <script>
-        // Function to display messages to the user
-        function displayMessage(message, isError = false) {
-            const messageDiv = document.getElementById('message');
-            messageDiv.textContent = message;
-            messageDiv.style.color = isError ? 'red' : 'green';
-        }
+        // List objects
+        document.getElementById('list-btn').addEventListener('click', async () => {
+            const response = await fetch('/list-objects');
+            const data = await response.json();
+            document.getElementById('list-output').textContent = JSON.stringify(data, null, 2);
+        });
 
+        // Upload image
         document.getElementById('upload-btn').addEventListener('click', async () => {
-            const fileInput = document.getElementById('file-input');
-            const file = fileInput.files[0];
-
-            if (!file) {
-                displayMessage("Please select a file to upload.", true);
-                return;
-            }
-
+            const fileInput = document.getElementById('imageFile');
             const formData = new FormData();
-            formData.append('image', file);
+            formData.append('image', fileInput.files[0]);
 
-            try {
-                const response = await fetch('/images', {
-                    method: 'POST',
-                    body: formData
-                });
+            const response = await fetch('/images', {
+                method: 'POST',
+                body: formData
+            });
 
-                if (response.ok) {
-                    const result = await response.text();
-                    displayMessage(result); // Display success message
-                } else {
-                    const errorText = await response.text();
-                    displayMessage(`Failed to upload the file: ${errorText}`, true);
-                }
-            } catch (error) {
-                console.error("Error uploading file:", error);
-                displayMessage("An error occurred while uploading the file.", true);
-            }
+            const result = await response.json();
+            document.getElementById('upload-output').textContent = JSON.stringify(result, null, 2);
+        });
+
+        // Retrieve object
+        document.getElementById('retrieve-btn').addEventListener('click', async () => {
+            const key = document.getElementById('retrieveKey').value;
+            const response = await fetch(`/retrieve/${key}`);
+            const data = await response.text();
+            document.getElementById('retrieve-output').textContent = data;
         });
     </script>
 </body>
