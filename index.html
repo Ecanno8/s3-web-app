@@ -11,16 +11,27 @@
 <body>
     <h1>Welcome to the S3 Web App</h1>
     <div id="file-list"></div>
-    <input type="file" id="file-input" />
+
+    <!-- File input and upload button -->
+    <input type="file" id="file-input" accept="image/*" />
     <button id="upload-btn">Upload</button>
 
+    <div id="message" style="margin-top: 20px;"></div> <!-- Message display -->
+
     <script>
+        // Function to display messages to the user
+        function displayMessage(message, isError = false) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = message;
+            messageDiv.style.color = isError ? 'red' : 'green';
+        }
+
         document.getElementById('upload-btn').addEventListener('click', async () => {
             const fileInput = document.getElementById('file-input');
             const file = fileInput.files[0];
 
             if (!file) {
-                alert("Please select a file to upload.");
+                displayMessage("Please select a file to upload.", true);
                 return;
             }
 
@@ -35,13 +46,14 @@
 
                 if (response.ok) {
                     const result = await response.text();
-                    alert(result);
+                    displayMessage(result); // Display success message
                 } else {
-                    alert("Failed to upload the file.");
+                    const errorText = await response.text();
+                    displayMessage(`Failed to upload the file: ${errorText}`, true);
                 }
             } catch (error) {
                 console.error("Error uploading file:", error);
-                alert("An error occurred while uploading the file.");
+                displayMessage("An error occurred while uploading the file.", true);
             }
         });
     </script>
