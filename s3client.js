@@ -21,6 +21,9 @@ app.get('/', function (req, res) {
     res.sendFile(path.join(__dirname, '/index.html'));
 });
 
+app.get('/styles.css', function (req, res) {
+    res.sendFile(path.join(__dirname, '/styles.css'));
+});
 // List objects in S3 bucket
 app.get('/images', async (req, res) => {
     const listObjectsParams = {
