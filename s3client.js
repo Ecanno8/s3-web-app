@@ -32,15 +32,18 @@ app.get('/styles.css', (req, res) => {
 // Endpoint to list objects in the S3 'images/' folder
 app.get('/images', async (req, res) => {
     const params = {
-        Bucket: 'cccf-s3-web-app',
-        Prefix: 's3-web-app/images/' // Adjusted to match your folder structure
+        Bucket: 'cccf-s3-web-app-bucket',
+        Prefix: 'images/', // The correct folder path in your bucket
     };
 
     try {
-        const command = new ListObjectsV2Command(params);
-        const data = await s3Client.send(command);
-        console.log("S3 data:", JSON.stringify(data, null, 2)); // Log the data in a readable format
-        res.json(data);
+        const data = await s3Client.send(new ListObjectsV2Command(params));
+        console.log("S3 data:", JSON.stringify(data, null, 2));
+        if (data.Contents) {
+            res.json(data.Contents.map(obj => obj.Key)); // Return the image paths
+        } else {
+            res.json([]);
+        }
     } catch (error) {
         console.error("Error listing objects from S3:", error);
         res.status(500).send("Error fetching images from S3.");
@@ -64,18 +67,17 @@ app.post('/images', async (req, res) => {
         try {
             const fileStream = fs.createReadStream(tempPath);
             const uploadParams = {
-                Bucket: 'cccf-s3-web-app', // Directly use your bucket name
-                Key: `s3-web-app/images/${file.name}`, // Save in 's3-web-app/images/' folder
+                Bucket: 'cccf-s3-web-app-bucket',
+                Key: `images/${file.name}`, // Save in the 'images/' folder
                 Body: fileStream,
             };
-            const putObjectCmd = new PutObjectCommand(uploadParams);
-            await s3Client.send(putObjectCmd);
-            res.send(`File uploaded successfully to ${uploadParams.Bucket}/s3-web-app/images/${file.name}`);
+            await s3Client.send(new PutObjectCommand(uploadParams));
+            res.send(`File uploaded successfully to ${uploadParams.Bucket}/images/${file.name}`);
         } catch (err) {
             console.error("Error uploading file:", err);
             res.status(500).send("Error uploading file");
         } finally {
-            fs.unlinkSync(tempPath); // Clean up the temporary file
+            fs.unlinkSync(tempPath);
         }
     });
 });
