@@ -13,8 +13,12 @@ const PORT = process.env.PORT || 3000;
 // Create S3 client
 const s3Client = new S3Client({
     region: process.env.AWS_REGION,
-    endpoint: 'http://localhost:4566',
     forcePathStyle: true,
+});
+
+// sendFile will go here
+app.get('/', function (req, res) {
+    res.sendFile(path.join(__dirname, '/index.html'));
 });
 
 // List objects in S3 bucket
