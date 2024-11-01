@@ -1,94 +1,65 @@
-// Import necessary modules
 const express = require('express');
-const fileUpload = require('express-fileupload');
-const { S3Client, ListObjectsV2Command, PutObjectCommand } = require('@aws-sdk/client-s3');
-const fs = require('fs');
-const path = require('path');
-const mkdirp = require('mkdirp'); // Ensure the uploads directory exists
-require('dotenv').config(); // Load environment variables
+const AWS = require('aws-sdk');
+const multer = require('multer');
+const dotenv = require('dotenv');
+
+dotenv.config();
 
 const app = express();
-app.use(fileUpload());
-const PORT = process.env.PORT || 3000;
+const port = process.env.PORT || 3000;
 
-// Create S3 client
-const s3Client = new S3Client({
-    region: process.env.AWS_REGION,
-    forcePathStyle: true,
+// Configure AWS SDK
+AWS.config.update({ region: process.env.AWS_REGION });
+const s3 = new AWS.S3();
+
+// Middleware for file uploads
+const upload = multer({ dest: 'uploads/' });
+
+// Endpoint to list all objects in the S3 bucket
+app.get('/list', async (req, res) => {
+    try {
+        const data = await s3.listObjectsV2({ Bucket: process.env.BUCKET_NAME }).promise();
+        res.json(data.Contents);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
-// Serve the HTML file
-app.get('/', function (req, res) {
-    res.sendFile(path.join(__dirname, '/index.html'));
-});
-
-app.get('/styles.css', function (req, res) {
-    res.sendFile(path.join(__dirname, '/styles.css'));
-});
-
-// List objects in S3 bucket
-app.get('/images', async (req, res) => {
-    const listObjectsParams = {
+// Endpoint to upload an object to the S3 bucket
+app.post('/upload', upload.single('file'), async (req, res) => {
+    const fileContent = fs.readFileSync(req.file.path);
+    const params = {
         Bucket: process.env.BUCKET_NAME,
+        Key: req.file.originalname,
+        Body: fileContent,
+        ContentType: req.file.mimetype,
     };
 
     try {
-        const listObjectsCmd = new ListObjectsV2Command(listObjectsParams);
-        const listObjectsResponse = await s3Client.send(listObjectsCmd);
-        res.json(listObjectsResponse);
-    } catch (err) {
-        console.error(err);
-        res.status(500).send("Error listing objects");
+        await s3.upload(params).promise();
+        res.status(200).json({ message: 'File uploaded successfully!' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 });
 
-// Upload an object to S3 bucket
-app.post('/images', async (req, res) => {
-    if (!req.files || !req.files.image) {
-        return res.status(400).send("No file uploaded.");
+// Endpoint to retrieve an object from the S3 bucket
+app.get('/retrieve/:filename', async (req, res) => {
+    const params = {
+        Bucket: process.env.BUCKET_NAME,
+        Key: req.params.filename,
+    };
+
+    try {
+        const data = await s3.getObject(params).promise();
+        res.writeHead(200, { 'Content-Type': data.ContentType });
+        res.end(data.Body);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
-
-    const file = req.files.image;
-
-    // File type validation (optional)
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-    if (!allowedTypes.includes(file.mimetype)) {
-        return res.status(400).send("Invalid file type. Only JPEG, PNG, and GIF are allowed.");
-    }
-
-    const tempDir = path.join(__dirname, 'uploads');
-    mkdirp.sync(tempDir); // Ensure the uploads directory exists
-
-    const tempPath = path.join(tempDir, file.name);
-
-    // Move the file to a temporary path
-    file.mv(tempPath, async (err) => {
-        if (err) {
-            return res.status(500).send(err);
-        }
-
-        // Read the file from the temp path and upload it to S3
-        try {
-            const fileStream = fs.createReadStream(tempPath);
-            const uploadParams = {
-                Bucket: process.env.BUCKET_NAME,
-                Key: file.name,
-                Body: fileStream,
-            };
-
-            const putObjectCmd = new PutObjectCommand(uploadParams);
-            await s3Client.send(putObjectCmd);
-            res.send(`File uploaded successfully to ${process.env.BUCKET_NAME}/${file.name}`);
-        } catch (err) {
-            console.error(err);
-            res.status(500).send("Error uploading file");
-        } finally {
-            fs.unlinkSync(tempPath); // Optionally, delete the temp file after uploading
-        }
-    });
 });
 
 // Start the server
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+app.listen(port, () => {
+    console.log(`Server is running on http://localhost:${port}`);
 });
