@@ -1,76 +1,88 @@
-const AWS = require('aws-sdk');
+// Import necessary modules
 const express = require('express');
-const bodyParser = require('body-parser');
-const app = express();
-const port = process.env.PORT || 3000;
+const fileUpload = require('express-fileupload');
+const { S3Client, ListObjectsV2Command, PutObjectCommand } = require('@aws-sdk/client-s3');
+const fs = require('fs');
+const path = require('path');
+const mkdirp = require('mkdirp'); // Ensure the uploads directory exists
+require('dotenv').config(); // Load environment variables
 
-// Configure AWS SDK
-AWS.config.update({
-    region: 'your-region', // e.g., 'us-west-2'
-    // Note: Credentials are managed through the instance profile
+const app = express();
+app.use(fileUpload());
+const PORT = process.env.PORT || 3000;
+
+// Create S3 client
+const s3Client = new S3Client({
+    region: process.env.AWS_REGION,
+    forcePathStyle: true,
 });
 
-// Create S3 service object
-const s3 = new AWS.S3();
+// Serve the HTML file
+app.get('/', function (req, res) {
+    res.sendFile(path.join(__dirname, '/index.html'));
+});
 
-// Middleware
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.get('/styles.css', function (req, res) {
+    res.sendFile(path.join(__dirname, '/styles.css'));
+});
 
-// Endpoint to list all objects in the bucket
-app.get('/list-objects', async (req, res) => {
-    const params = {
-        Bucket: 'cccf-s3-web-app-bucket' // Your bucket name
+// List objects in S3 bucket
+app.get('/images', async (req, res) => {
+    const listObjectsParams = {
+        Bucket: process.env.BUCKET_NAME,
     };
 
     try {
-        const data = await s3.listObjectsV2(params).promise();
-        const objectKeys = data.Contents.map(item => item.Key);
-        res.json(objectKeys); // Send back the list of object keys
+        const listObjectsCmd = new ListObjectsV2Command(listObjectsParams);
+        const listObjectsResponse = await s3Client.send(listObjectsCmd);
+        res.json(listObjectsResponse);
     } catch (err) {
         console.error(err);
-        res.status(500).send('Error retrieving objects');
+        res.status(500).send("Error listing objects");
     }
 });
 
-// Endpoint to upload an object to the bucket
-app.post('/upload', (req, res) => {
-    const { fileName, fileContent } = req.body; // Assume you're sending fileName and fileContent in the body
+// Upload an object to S3 bucket
+app.post('/images', async (req, res) => {
+    if (!req.files || !req.files.image) {
+        return res.status(400).send("No file uploaded.");
+    }
+    const file = req.files.image;
 
-    const params = {
-        Bucket: 'cccf-s3-web-app-bucket',
-        Key: fileName,
-        Body: fileContent,
-        ContentType: 'text/plain' // Change as necessary (e.g., 'image/jpeg' for images)
-    };
-
-    s3.upload(params, (err, data) => {
+    // File type validation (optional)
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (!allowedTypes.includes(file.mimetype)) {
+        return res.status(400).send("Invalid file type. Only JPEG, PNG, and GIF are allowed.");
+    }
+    const tempDir = path.join(__dirname, 'uploads');
+    mkdirp.sync(tempDir); // Ensure the uploads directory exists
+    const tempPath = path.join(tempDir, file.name);
+    // Move the file to a temporary path
+    file.mv(tempPath, async (err) => {
         if (err) {
-            console.error(err);
-            return res.status(500).send('Error uploading file');
+            return res.status(500).send(err);
         }
-        res.json({ message: 'File uploaded successfully', data });
+        // Read the file from the temp path and upload it to S3
+        try {
+            const fileStream = fs.createReadStream(tempPath);
+            const uploadParams = {
+                Bucket: process.env.BUCKET_NAME,
+                Key: file.name,
+                Body: fileStream,
+            };
+            const putObjectCmd = new PutObjectCommand(uploadParams);
+            await s3Client.send(putObjectCmd);
+            res.send(`File uploaded successfully to ${process.env.BUCKET_NAME}/${file.name}`);
+        } catch (err) {
+            console.error(err);
+            res.status(500).send("Error uploading file");
+        } finally {
+            fs.unlinkSync(tempPath); // Optionally, delete the temp file after uploading
+        }
     });
 });
 
-// Endpoint to list and display image URLs
-app.get('/images', async (req, res) => {
-    const params = {
-        Bucket: 'cccf-s3-web-app-bucket'
-    };
-    try {
-        const data = await s3.listObjectsV2(params).promise();
-        const imageUrls = data.Contents.map(item => {
-            return `https://${params.Bucket}.s3.amazonaws.com/${item.Key}`;
-        });
-        res.json(imageUrls); // Send image URLs to the frontend
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Error retrieving images');
-    }
-});
-
 // Start the server
-app.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}`);
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
