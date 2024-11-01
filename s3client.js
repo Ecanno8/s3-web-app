@@ -4,36 +4,36 @@ const fileUpload = require('express-fileupload');
 const { S3Client, ListObjectsV2Command, PutObjectCommand } = require('@aws-sdk/client-s3');
 const fs = require('fs');
 const path = require('path');
-const mkdirp = require('mkdirp'); // Ensure the uploads directory exists
-require('dotenv').config(); // Load environment variables
+const mkdirp = require('mkdirp');
+require('dotenv').config();
 
 const app = express();
 app.use(fileUpload());
 const PORT = process.env.PORT || 3000;
 
-// Create S3 client
+// S3 client setup
 const s3Client = new S3Client({
     region: process.env.AWS_REGION,
-    forcePathStyle: true,
 });
 
-// Middleware to serve static files from the current directory
-app.use(express.static(__dirname)); // Serves files from the current directory
+// Serve static files
+app.use(express.static(__dirname));
 
 // Serve the HTML file
-app.get('/', function (req, res) {
+app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Serve CSS file
-app.get('/styles.css', function (req, res) {
+// Serve the CSS file
+app.get('/styles.css', (req, res) => {
     res.sendFile(path.join(__dirname, 'styles.css'));
 });
 
-// List objects in S3 bucket
+// Endpoint to list objects in the S3 'Images/' folder
 app.get('/images', async (req, res) => {
     const listObjectsParams = {
         Bucket: process.env.BUCKET_NAME,
+        Prefix: 'Images/' // Specify folder prefix
     };
 
     try {
@@ -41,47 +41,40 @@ app.get('/images', async (req, res) => {
         const listObjectsResponse = await s3Client.send(listObjectsCmd);
         res.json(listObjectsResponse);
     } catch (err) {
-        console.error(err);
+        console.error("Error listing objects:", err);
         res.status(500).send("Error listing objects");
     }
 });
 
-// Upload an object to S3 bucket
+// Endpoint to upload a file to the S3 'Images/' folder
 app.post('/images', async (req, res) => {
     if (!req.files || !req.files.image) {
         return res.status(400).send("No file uploaded.");
     }
-    const file = req.files.image;
 
-    // File type validation (optional)
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-    if (!allowedTypes.includes(file.mimetype)) {
-        return res.status(400).send("Invalid file type. Only JPEG, PNG, and GIF are allowed.");
-    }
+    const file = req.files.image;
     const tempDir = path.join(__dirname, 'uploads');
-    mkdirp.sync(tempDir); // Ensure the uploads directory exists
+    mkdirp.sync(tempDir);
     const tempPath = path.join(tempDir, file.name);
-    // Move the file to a temporary path
+
     file.mv(tempPath, async (err) => {
-        if (err) {
-            return res.status(500).send(err);
-        }
-        // Read the file from the temp path and upload it to S3
+        if (err) return res.status(500).send(err);
+
         try {
             const fileStream = fs.createReadStream(tempPath);
             const uploadParams = {
                 Bucket: process.env.BUCKET_NAME,
-                Key: file.name,
+                Key: `Images/${file.name}`, // Save in 'Images/' folder
                 Body: fileStream,
             };
             const putObjectCmd = new PutObjectCommand(uploadParams);
             await s3Client.send(putObjectCmd);
-            res.send(`File uploaded successfully to ${process.env.BUCKET_NAME}/${file.name}`);
+            res.send(`File uploaded successfully to ${process.env.BUCKET_NAME}/Images/${file.name}`);
         } catch (err) {
-            console.error(err);
+            console.error("Error uploading file:", err);
             res.status(500).send("Error uploading file");
         } finally {
-            fs.unlinkSync(tempPath); // Optionally, delete the temp file after uploading
+            fs.unlinkSync(tempPath);
         }
     });
 });

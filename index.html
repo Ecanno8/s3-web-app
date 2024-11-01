@@ -10,13 +10,15 @@
 
 <body>
     <h1>Welcome to the S3 Web App</h1>
+
+    <!-- Display uploaded images -->
     <div id="file-list"></div>
 
     <!-- File input and upload button -->
     <input type="file" id="file-input" accept="image/*" />
     <button id="upload-btn">Upload</button>
 
-    <div id="message" style="margin-top: 20px;"></div> <!-- Message display -->
+    <div id="message" style="margin-top: 20px;"></div>
 
     <script>
         // Function to display messages to the user
@@ -26,6 +28,35 @@
             messageDiv.style.color = isError ? 'red' : 'green';
         }
 
+        // Function to fetch and display images from the S3 bucket
+        async function loadImages() {
+            try {
+                const response = await fetch('/images');
+                const images = await response.json();
+                const fileListDiv = document.getElementById('file-list');
+                fileListDiv.innerHTML = '';
+
+                // Display each image from the S3 Images folder
+                images.Contents.forEach(image => {
+                    if (image.Key.startsWith('Images/')) {
+                        const img = document.createElement('img');
+                        img.src = `https://${process.env.BUCKET_NAME}.s3.amazonaws.com/${image.Key}`;
+                        img.alt = image.Key;
+                        img.style.width = '200px';
+                        img.style.margin = '10px';
+                        fileListDiv.appendChild(img);
+                    }
+                });
+            } catch (error) {
+                console.error("Error loading images:", error);
+                displayMessage("Failed to load images.", true);
+            }
+        }
+
+        // Load images on page load
+        document.addEventListener('DOMContentLoaded', loadImages);
+
+        // Handle file upload
         document.getElementById('upload-btn').addEventListener('click', async () => {
             const fileInput = document.getElementById('file-input');
             const file = fileInput.files[0];
@@ -37,6 +68,7 @@
 
             const formData = new FormData();
             formData.append('image', file);
+
             try {
                 const response = await fetch('/images', {
                     method: 'POST',
@@ -44,7 +76,8 @@
                 });
                 if (response.ok) {
                     const result = await response.text();
-                    displayMessage(result); // Display success message
+                    displayMessage(result);
+                    loadImages(); // Reload images after successful upload
                 } else {
                     const errorText = await response.text();
                     displayMessage(`Failed to upload the file: ${errorText}`, true);
