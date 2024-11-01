@@ -21,6 +21,8 @@
     <div id="message" style="margin-top: 20px;"></div>
 
     <script>
+        const BUCKET_NAME = 'cccf-s3-web-app-bucket'; // Replace with your actual bucket name
+
         // Function to display messages to the user
         function displayMessage(message, isError = false) {
             const messageDiv = document.getElementById('message');
@@ -31,16 +33,16 @@
         // Function to fetch and display images from the S3 bucket
         async function loadImages() {
             try {
-                const response = await fetch('/images');
+                const response = await fetch('/images'); // Adjust URL as needed for your server
                 const images = await response.json();
                 const fileListDiv = document.getElementById('file-list');
                 fileListDiv.innerHTML = '';
 
-                // Display each image from the S3 Images folder
+                // Display each image from the S3 images folder
                 images.Contents.forEach(image => {
-                    if (image.Key.startsWith('Images/')) {
+                    if (image.Key.startsWith('images/')) { // Adjust folder name as needed
                         const img = document.createElement('img');
-                        img.src = `https://${process.env.BUCKET_NAME}.s3.amazonaws.com/${image.Key}`;
+                        img.src = `https://${BUCKET_NAME}.s3.amazonaws.com/${image.Key}`;
                         img.alt = image.Key;
                         img.style.width = '200px';
                         img.style.margin = '10px';
@@ -70,7 +72,7 @@
             formData.append('image', file);
 
             try {
-                const response = await fetch('/images', {
+                const response = await fetch('/images', { // Adjust URL as needed for your server
                     method: 'POST',
                     body: formData
                 });
