@@ -17,13 +17,17 @@ const s3Client = new S3Client({
     forcePathStyle: true,
 });
 
+// Middleware to serve static files from the current directory
+app.use(express.static(__dirname)); // Serves files from the current directory
+
 // Serve the HTML file
 app.get('/', function (req, res) {
-    res.sendFile(path.join(__dirname, '/index.html'));
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Serve CSS file
 app.get('/styles.css', function (req, res) {
-    res.sendFile(path.join(__dirname, '/styles.css'));
+    res.sendFile(path.join(__dirname, 'styles.css'));
 });
 
 // List objects in S3 bucket
