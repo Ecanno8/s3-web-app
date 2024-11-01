@@ -12,20 +12,15 @@
     <h1>Welcome to the S3 Web App</h1>
 
     <!-- Display uploaded images -->
-    <div id="file-list" style="display: flex; flex-wrap: wrap;"></div>
+    <div id="file-list"></div>
 
-    <!-- File input and upload button in a form -->
-    <form id="upload-form">
-        <input type="file" id="file-input" accept="image/*" />
-        <button type="submit" id="upload-btn">Upload</button>
-    </form>
+    <!-- File input and upload button -->
+    <input type="file" id="file-input" accept="image/*" />
+    <button id="upload-btn">Upload</button>
 
-    <!-- Message display for success or error feedback -->
-    <div id="message" style="margin-top: 20px; color: red;"></div>
+    <div id="message" style="margin-top: 20px;"></div>
 
     <script>
-        const BUCKET_NAME = 'cccf-s3-web-app'; // Your actual bucket name
-
         // Function to display messages to the user
         function displayMessage(message, isError = false) {
             const messageDiv = document.getElementById('message');
@@ -36,25 +31,22 @@
         // Function to fetch and display images from the S3 bucket
         async function loadImages() {
             try {
-                const response = await fetch('/images'); // Adjust URL as needed for your server
+                const response = await fetch('/images');
                 const images = await response.json();
                 const fileListDiv = document.getElementById('file-list');
                 fileListDiv.innerHTML = '';
 
-                if (images && Array.isArray(images.Contents) && images.Contents.length > 0) {
-                    images.Contents.forEach(image => {
-                        if (image.Key.startsWith('images/')) { // Ensure folder path matches your S3 structure
-                            const img = document.createElement('img');
-                            img.src = `https://${BUCKET_NAME}.s3.amazonaws.com/${image.Key}`;
-                            img.alt = image.Key;
-                            img.style.width = '200px';
-                            img.style.margin = '10px';
-                            fileListDiv.appendChild(img);
-                        }
-                    });
-                } else {
-                    displayMessage("No images found in the bucket.", true);
-                }
+                // Display each image from the S3 Images folder
+                images.Contents.forEach(image => {
+                    if (image.Key.startsWith('Images/')) {
+                        const img = document.createElement('img');
+                        img.src = `https://${process.env.BUCKET_NAME}.s3.amazonaws.com/${image.Key}`;
+                        img.alt = image.Key;
+                        img.style.width = '200px';
+                        img.style.margin = '10px';
+                        fileListDiv.appendChild(img);
+                    }
+                });
             } catch (error) {
                 console.error("Error loading images:", error);
                 displayMessage("Failed to load images.", true);
@@ -64,10 +56,8 @@
         // Load images on page load
         document.addEventListener('DOMContentLoaded', loadImages);
 
-        // Handle file upload on form submission
-        document.getElementById('upload-form').addEventListener('submit', async (event) => {
-            event.preventDefault(); // Prevent the form from submitting the traditional way
-
+        // Handle file upload
+        document.getElementById('upload-btn').addEventListener('click', async () => {
             const fileInput = document.getElementById('file-input');
             const file = fileInput.files[0];
 
