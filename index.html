@@ -31,34 +31,35 @@
         // Function to fetch and display images from the S3 bucket
         async function loadImages() {
             try {
-                const response = await fetch('/images'); // Fetch images from the server
-                const images = await response.json(); // Parse the JSON response
+                const response = await fetch('/images');
+                const images = await response.json();
 
-                console.log("Images response:", images); // Log the full response for debugging
+                // Log the images response to check its structure
+                console.log("Images response:", images);
 
                 const fileListDiv = document.getElementById('file-list');
-                fileListDiv.innerHTML = ''; // Clear the previous images
+                fileListDiv.innerHTML = '';
 
-                // Check if Contents is defined and is an array
+                // Check if the images object has Contents and if it's an array
                 if (images.Contents && Array.isArray(images.Contents)) {
                     images.Contents.forEach(image => {
-                        const img = document.createElement('img');
-                        img.src = `https://cccf-s3-web-app.s3.amazonaws.com/${image.Key}`;
-                        img.alt = image.Key;
-                        img.style.width = '200px';
-                        img.style.margin = '10px';
-                        fileListDiv.appendChild(img);
+                        if (image.Key.startsWith('s3-web-app/images/')) {
+                            const img = document.createElement('img');
+                            img.src = `https://cccf-s3-web-app.s3.amazonaws.com/${image.Key}`;
+                            img.alt = image.Key;
+                            img.style.width = '200px';
+                            img.style.margin = '10px';
+                            fileListDiv.appendChild(img);
+                        }
                     });
                 } else {
-                    console.error("No images found or invalid response structure.");
-                    displayMessage("No images found.", true); // Inform the user
+                    displayMessage("No images found or invalid response structure.", true);
                 }
             } catch (error) {
                 console.error("Error loading images:", error);
                 displayMessage("Failed to load images.", true);
             }
         }
-
 
         // Load images on page load
         document.addEventListener('DOMContentLoaded', loadImages);
