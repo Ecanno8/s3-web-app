@@ -33,22 +33,22 @@ app.get('/styles.css', (req, res) => {
 app.get('/images', async (req, res) => {
     const params = {
         Bucket: 'cccf-s3-web-app-bucket',
-        Prefix: 'images/', // Ensure this matches your S3 folder structure
+        Prefix: 'images/', // Adjust if necessary
     };
 
     try {
         const data = await s3Client.send(new ListObjectsV2Command(params));
-        console.log("S3 data:", JSON.stringify(data, null, 2));
         if (data.Contents) {
-            res.json(data.Contents.map(obj => obj.Key)); // Return the image paths
+            res.json(data.Contents.map(obj => obj.Key)); // Return image paths
         } else {
-            res.json([]);
+            res.json([]); // Return empty array if no images
         }
     } catch (error) {
         console.error("Error listing objects from S3:", error);
-        res.status(500).json({ error: "Error fetching images from S3." });
+        res.status(500).json({ error: "Error fetching images from S3." }); // Ensure JSON format
     }
 });
+
 
 
 // Endpoint to upload a file to the S3 'images/' folder

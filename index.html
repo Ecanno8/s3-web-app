@@ -40,23 +40,20 @@
             try {
                 const response = await fetch('/images');
                 if (!response.ok) {
-                    // If response status is not OK, throw an error
-                    throw new Error(`Error fetching images: ${response.statusText}`);
+                    // Log the error if response status is not ok
+                    throw new Error(`Server error: ${response.status} - ${response.statusText}`);
                 }
 
-                // Attempt to parse JSON, handling cases where parsing might fail
                 let images;
                 try {
-                    images = await response.json();
-                } catch (parseError) {
-                    console.error("Failed to parse JSON:", parseError);
-                    document.getElementById('image-list').innerHTML = '<p>Error loading images.</p>';
-                    return;
+                    images = await response.json(); // Attempt to parse JSON response
+                } catch (jsonError) {
+                    console.error("Failed to parse JSON:", jsonError);
+                    throw new Error("Invalid JSON response from server.");
                 }
 
-                console.log("Fetched images:", images); // Log images to see structure
                 const imageList = document.getElementById('image-list');
-                imageList.innerHTML = '';
+                imageList.innerHTML = ''; // Clear previous images
 
                 if (Array.isArray(images) && images.length > 0) {
                     images.forEach((imageKey) => {
@@ -64,7 +61,7 @@
                         const imgElement = document.createElement('img');
                         imgElement.src = imageUrl;
                         imgElement.alt = imageKey;
-                        imgElement.style.width = '100px'; // Adjust size as needed
+                        imgElement.style.width = '100px';
                         imageList.appendChild(imgElement);
                     });
                 } else {
@@ -76,8 +73,6 @@
             }
         }
 
-        // Load images on page load
-        loadImages();
     </script>
 </body>
 
