@@ -73,7 +73,15 @@ app.post('/images', async (req, res) => {
                 Body: fileStream,
             };
             await s3Client.send(new PutObjectCommand(uploadParams));
+
             res.send(`File uploaded successfully to ${uploadParams.Bucket}/images/${file.name}`);
+            // for qflix API changes START
+            // =================================
+            // delay 3 seconds
+            // list files @ `resized_images/` and save the one that matches `file.name`
+            // BEWARE CODY NO KNOW JS syntax
+            res.send({ "original_file": `$file.name`, "resized_file": resizedfilename })
+            // ==================================
         } catch (err) {
             console.error("Error uploading file:", err);
             res.status(500).send("Error uploading file");
