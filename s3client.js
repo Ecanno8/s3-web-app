@@ -74,7 +74,7 @@ app.post('/original-images', async (req, res) => {
             };
             await s3Client.send(new PutObjectCommand(uploadParams));
 
-            res.send(`File uploaded successfully to ${uploadParams.Bucket}/images/${file.name}`);
+            res.send(`File uploaded successfully to ${uploadParams.Bucket}/original-images/${file.name}`);
             // for qflix API changes START
             // =================================
             // delay 3 seconds
