@@ -49,7 +49,9 @@ app.get('/original-images', async (req, res) => {
     }
 });
 
-
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 // Endpoint to upload a file to the S3 'images/' folder
 app.post('/original-images', async (req, res) => {
@@ -75,11 +77,24 @@ app.post('/original-images', async (req, res) => {
             await s3Client.send(new PutObjectCommand(uploadParams));
 
             res.send(`File uploaded successfully to ${uploadParams.Bucket}/original-images/${file.name}`);
-            // for qflix API changes START
-            // =================================
-            // delay 3 seconds
-            // list files @ `resized_images/` and save the one that matches `file.name`
-            // BEWARE CODY NO KNOW JS syntax
+            const fetchParams = {
+                Bucket: 'cccflambucket',
+                Prefix: 'resized-images/', // Adjust if necessary 
+            }
+            // delay 3 seconds - waiting for lambda to run
+            await sleep(3000);
+            try {
+                const data = await s3Client.send(new ListObjectsV2Command(params));
+            }
+            catch (error) {
+                console.error("Error listing resized images:", error);
+                res.status(500).json({ error: "Error listing resized images from S3." }); // Ensure JSON format
+            }
+
+            if (data === null) {
+                res.send({ "original_file": `$file.name`, "resized_file": "UNKNOWN" })
+            }
+            const resizedfilename = data.Contents.map(obj => obj.Key).find(key => key.includes(file.name));
             res.send({ "original_file": `$file.name`, "resized_file": resizedfilename })
             // ==================================
         } catch (err) {
