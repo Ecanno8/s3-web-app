@@ -30,10 +30,10 @@ app.get('/styles.css', (req, res) => {
 });
 
 // Endpoint to list objects in the S3 'images/' folder
-app.get('/images', async (req, res) => {
+app.get('/original-images', async (req, res) => {
     const params = {
-        Bucket: 'cccf-s3-web-app-bucket',
-        Prefix: 'images/', // Adjust if necessary
+        Bucket: 'cccflambucket',
+        Prefix: 'original-images/', // Adjust if necessary
     };
 
     try {
@@ -52,7 +52,7 @@ app.get('/images', async (req, res) => {
 
 
 // Endpoint to upload a file to the S3 'images/' folder
-app.post('/images', async (req, res) => {
+app.post('/original-images', async (req, res) => {
     if (!req.files || !req.files.image) {
         return res.status(400).send("No file uploaded.");
     }
@@ -68,8 +68,8 @@ app.post('/images', async (req, res) => {
         try {
             const fileStream = fs.createReadStream(tempPath);
             const uploadParams = {
-                Bucket: 'cccf-s3-web-app-bucket',
-                Key: `images/${file.name}`, // Ensure the path matches your S3 folder
+                Bucket: 'cccflambucket',
+                Key: `original-images/${file.name}`, // Ensure the path matches your S3 folder
                 Body: fileStream,
             };
             await s3Client.send(new PutObjectCommand(uploadParams));
