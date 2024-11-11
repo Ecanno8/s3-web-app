@@ -23,7 +23,7 @@
             e.preventDefault();
             const formData = new FormData(e.target);
             try {
-                const response = await fetch('/oringal-images', {
+                const response = await fetch('/original-images', {
                     method: 'POST',
                     body: formData,
                 });
@@ -38,7 +38,7 @@
 
         async function loadImages() {
             try {
-                const response = await fetch('/oringal-images');
+                const response = await fetch('/original-images');
                 if (!response.ok) {
                     // Log the error if response status is not ok
                     throw new Error(`Server error: ${response.status} - ${response.statusText}`);
