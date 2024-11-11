@@ -23,7 +23,7 @@
             e.preventDefault();
             const formData = new FormData(e.target);
             try {
-                const response = await fetch('/images', {
+                const response = await fetch('/oringal-images', {
                     method: 'POST',
                     body: formData,
                 });
@@ -38,7 +38,7 @@
 
         async function loadImages() {
             try {
-                const response = await fetch('/images');
+                const response = await fetch('/oringal-images');
                 if (!response.ok) {
                     // Log the error if response status is not ok
                     throw new Error(`Server error: ${response.status} - ${response.statusText}`);
@@ -57,7 +57,7 @@
 
                 if (Array.isArray(images) && images.length > 0) {
                     images.forEach((imageKey) => {
-                        const imageUrl = `https://cccf-s3-web-app-bucket.s3.amazonaws.com/${imageKey}`;
+                        const imageUrl = `https://cccflambucket.s3.amazonaws.com/${imageKey}`;
                         const imgElement = document.createElement('img');
                         imgElement.src = imageUrl;
                         imgElement.alt = imageKey;
